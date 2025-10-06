@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QR Bánh Trung Thu</title>
+<style>
+  :root{
+    --cake1:#f2c265; /* outer */
+    --cake2:#d8a146; /* mid */
+    --cake3:#b67e2e; /* lines */
+  }
+  body{
+    margin:0; padding:24px;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background:#0c0c0f; color:#fff;
+    display:flex; flex-direction:column; align-items:center; gap:18px;
+  }
+  .panel{
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:14px; padding:14px 16px; width:min(720px, 92vw);
+  }
+  label{font-size:14px;color:#d7e3ff}
+  input[type="text"]{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
+    background:#121217; color:#fff; outline:none;
+  }
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:8px}
+  button{
+    padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
+    background:linear-gradient(135deg, #ffd27a, #e6ae52); color:#2a1600; font-weight:700; cursor:pointer;
+  }
+  .cake-wrap{
+    position:relative; width:min(380px, 90vw); aspect-ratio:1/1;
+    display:grid; place-items:center;
+  }
+  svg#mooncake{position:absolute; inset:0}
+  .qrbox{
+    width:72%; aspect-ratio:1/1; display:grid; place-items:center;
+    background:#fff; border-radius:22px; padding:12px;
+    box-shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+  .note{font-size:12px;color:#b9c6ff;opacity:.9}
+  .footer{opacity:.65;font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+  <h1>🍪 QR hình bánh trung thu</h1>
+  <div class="panel">
+    <label for="url">Bước 1 — Dán link trang web lời chúc (URL):</label>
+    <input id="url" type="text" placeholder="https://example.com/loi-chuc-trung-thu" />
+    <div class="row">
+      <button id="gen">Tạo QR</button>
+      <button id="dl">Tải PNG</button>
+    </div>
+    <p class="note">Mẹo: Sau khi deploy trang lời chúc (GitHub Pages/Netlify), copy URL vào ô trên.</p>
+  </div>
+
+  <div class="cake-wrap">
+    <!-- Mooncake scalloped outline generated in JS into this SVG -->
+    <svg id="mooncake" viewBox="0 0 100 100" aria-hidden="true"></svg>
+    <div class="qrbox" id="qrbox"><div id="qr"></div></div>
+  </div>
+
+  <p class="footer">Giữ viền trắng xung quanh QR (quiet zone) và test bằng 2–3 điện thoại.</p>
+
+  <!-- QR Code Styling CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <script>
+    // Draw a scalloped "mooncake" rosette
+    const svg = document.getElementById('mooncake');
+    const N = 24; // petals
+    const R1 = 50, R2 = 44; // outer/inner radius
+    let d = "";
+    for(let i=0;i<=N;i++){
+      const t = (i/N) * Math.PI*2;
+      const r = i%2===0 ? R1 : R2;
+      const x = 50 + r * Math.cos(t);
+      const y = 50 + r * Math.sin(t);
+      d += (i===0? "M":"L") + x.toFixed(3) + " " + y.toFixed(3) + " ";
+    }
+    d += "Z";
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill","url(#cakeGrad)");
+    path.setAttribute("stroke","var(--cake3)");
+    path.setAttribute("stroke-width","1.2");
+    svg.appendChild(path);
+
+    const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
+    const grad = document.createElementNS("http://www.w3.org/2000/svg","radialGradient");
+    grad.setAttribute("id","cakeGrad");
+    grad.setAttribute("cx","50%"); grad.setAttribute("cy","50%");
+    grad.setAttribute("r","60%");
+    const s1 = document.createElementNS("http://www.w3.org/2000/svg","stop");
+    s1.setAttribute("offset","0%"); s1.setAttribute("stop-color","var(--cake1)");
+    const s2 = document.createElementNS("http://www.w3.org/2000/svg","stop");
+    s2.setAttribute("offset","100%"); s2.setAttribute("stop-color","var(--cake2)");
+    grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    // inner emboss ring
+    const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    ring.setAttribute("cx","50"); ring.setAttribute("cy","50"); ring.setAttribute("r","34");
+    ring.setAttribute("fill","none"); ring.setAttribute("stroke","var(--cake3)"); ring.setAttribute("stroke-width","1.4");
+    svg.appendChild(ring);
+
+    // QR generator
+    const qr = new QRCodeStyling({
+      width: 260, height: 260, type: "canvas",
+      data: "https://example.com/loi-chuc-trung-thu",
+      image: "", // you could add a small moon icon here
+      margin: 10,
+      dotsOptions: { type: "rounded", color: "#2a1a0a"},
+      cornersSquareOptions: { type: "extra-rounded", color: "#2a1a0a"},
+      backgroundOptions: { color: "transparent" }
+    });
+    qr.append(document.getElementById("qr"));
+
+    document.getElementById("gen").addEventListener("click", ()=>{
+      const url = document.getElementById("url").value.trim();
+      if(url) qr.update({ data: url });
+    });
+    document.getElementById("dl").addEventListener("click", ()=>{
+      qr.download({ name: "qr-banh-trung-thu", extension: "png" });
+    });
+  </script>
+</body>
+</html>
